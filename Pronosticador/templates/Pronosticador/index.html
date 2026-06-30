@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA Predictiva | Mundial 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-base:      #080C12;
+            --bg-card:      #0E1420;
+            --bg-input:     #131926;
+            --border:       rgba(255,255,255,0.07);
+            --border-glow:  rgba(56,189,248,0.35);
+
+            --accent-cyan:  #38BDF8;
+            --accent-green: #34D399;
+            --accent-red:   #F87171;
+            --accent-gold:  #FBBF24;
+
+            --text-primary: #F0F4FF;
+            --text-muted:   #6B7A99;
+            --text-label:   #8A9AB8;
+
+            --gradient-header: linear-gradient(135deg, #38BDF8 0%, #34D399 100%);
+            --gradient-btn:    linear-gradient(135deg, #0EA5E9 0%, #0369A1 100%);
+            --gradient-card:   linear-gradient(160deg, #0E1420 0%, #0A1220 100%);
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ─── NOISE TEXTURE overlay ─── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        /* ─── HEADER ─── */
+        header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            background: rgba(56,189,248,0.08);
+            border: 1px solid rgba(56,189,248,0.2);
+            border-radius: 100px;
+            padding: 6px 16px;
+            margin-bottom: 20px;
+        }
+
+        .eyebrow span.dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        h1 {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(44px, 8vw, 80px);
+            font-weight: 700;
+            line-height: 0.92;
+            letter-spacing: -0.01em;
+            background: var(--gradient-header);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 14px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+        }
+
+        /* ─── MATCH SELECTOR CARD ─── */
+        .selector-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 36px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03) inset;
+        }
+
+        .selector-card form {
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .field {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-label);
+            margin-bottom: 10px;
+        }
+
+        .team-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-local  { color: var(--accent-cyan);  }
+        .badge-visit  { color: var(--accent-red);   }
+        .badge-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .badge-local .badge-dot  { background: var(--accent-cyan); }
+        .badge-visit .badge-dot  { background: var(--accent-red);  }
+
+        select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7A99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .field-local select:focus  { border-color: var(--accent-cyan); box-shadow: 0 0 0 3px rgba(56,189,248,0.12); }
+        .field-visit select:focus  { border-color: var(--accent-red);  box-shadow: 0 0 0 3px rgba(248,113,113,0.12); }
+
+        select option { background: #0E1420; }
+
+        .vs-divider {
+            flex-shrink: 0;
+            padding-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .vs-text {
+            font-family: 'Teko', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-muted);
+            line-height: 1;
+        }
+
+        .vs-line {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+        }
+
+        .btn-predict {
+            flex-shrink: 0;
+            background: var(--gradient-btn);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 36px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(14,165,233,0.3), 0 0 0 1px rgba(14,165,233,0.2) inset;
+            transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+            outline: none;
+            align-self: flex-end;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(14,165,233,0.45), 0 0 0 1px rgba(14,165,233,0.3) inset;
+            filter: brightness(1.1);
+        }
+
+        .btn-predict:active { transform: translateY(0); }
+
+        /* ─── ERROR ─── */
+        .alert-error {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(248,113,113,0.07);
+            border: 1px solid rgba(248,113,113,0.3);
+            color: #FCA5A5;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 32px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .alert-error svg { flex-shrink: 0; color: var(--accent-red); }
+
+        /* ─── RESULT PANEL ─── */
+        .result-panel {
+            background: var(--gradient-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset;
+            animation: fadeUp 0.5s ease-out;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .result-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: var(--text-label);
+            text-transform: uppercase;
+        }
+
+        .result-badge {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--accent-green);
+            background: rgba(52,211,153,0.1);
+            border: 1px solid rgba(52,211,153,0.2);
+            border-radius: 100px;
+            padding: 4px 12px;
+            text-transform: uppercase;
+        }
+
+        .result-image-wrap {
+            padding: 4px;
+        }
+
+        .result-image-wrap img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 16px;
+        }
+
+        /* ─── EMPTY STATE ─── */
+        .empty-state {
+            text-align: center;
+            padding: 72px 32px;
+            border: 1px dashed rgba(255,255,255,0.08);
+            border-radius: 20px;
+            background: rgba(14,20,32,0.5);
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            color: #2A3550;
+        }
+
+        .empty-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 26px;
+            font-weight: 600;
+            color: #2A3550;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 360px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .empty-note {
+            font-size: 12px;
+            color: #3A4A64;
+            margin-top: 12px;
+        }
+
+        /* ─── FOOTER ─── */
+        footer {
+            text-align: center;
+            margin-top: 64px;
+            font-size: 12px;
+            color: #2A3550;
+            letter-spacing: 0.05em;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 640px) {
+            .selector-card form { flex-direction: column; }
+            .vs-divider { flex-direction: row; padding-bottom: 0; align-self: center; }
+            .vs-line { display: none; }
+            .btn-predict { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- HEADER -->
+    <header>
+        <div class="eyebrow">
+            <span class="dot"></span>
+            Dixon-Coles + XGBoost · Groll et al. 2019
+        </div>
+        <h1>Pronosticador<br>Mundial 2026</h1>
+        <p class="subtitle">Modelo estadístico avanzado con IA predictiva</p>
+    </header>
+
+    <!-- SELECTOR CARD -->
+    <div class="selector-card">
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="field field-local">
+                <div class="team-badge badge-local">
+                    <span class="badge-dot"></span>
+                    <label style="margin-bottom:0;">Equipo Local</label>
+                </div>
+                <select name="local">
+                    {% for equipo in equipos %}
+                        <option value="{{ equipo }}" {% if equipo == local_seleccionado %}selected{% endif %}>{{ equipo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="vs-divider">
+                <span class="vs-line"></span>
+                <span class="vs-text">VS</span>
+                <span class="vs-line"></span>
+            </div>
+
+            <div class="field field-visit">
+                <div class="team-badge badge-visit">
+                    <span class="badge-dot"></span>
+                    <label style="margin-bottom:0;">Equipo Visitante</label>
+                </div>
+                <select name="visitante">
+                    {% for equipo in equipos %}
+                        <option value="{{ equipo }}" {% if equipo == visitante_seleccionado %}selected{% endif %}>{{ equipo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn-predict">Predecir partido</button>
+        </form>
+    </div>
+
+    <!-- ERROR -->
+    {% if error %}
+    <div class="alert-error">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- RESULTADO -->
+    {% if imagen_b64 %}
+    <div class="result-panel">
+        <div class="result-header">
+            <span class="result-title">Análisis predictivo</span>
+            <span class="result-badge">✓ Modelo entrenado</span>
+        </div>
+        <div class="result-image-wrap">
+            <img src="data:image/png;base64,{{ imagen_b64 }}" alt="Dashboard de Predicción">
+        </div>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p class="empty-title">Sin predicción activa</p>
+        <p class="empty-text">Seleccioná dos selecciones y presioná "Predecir partido" para ver el análisis completo.</p>
+        <p class="empty-note">La primera predicción puede tardar unos segundos mientras el modelo XGBoost y Dixon-Coles se entrenan.</p>
+    </div>
+    {% endif %}
+
+    <footer>
+        Pronosticador Mundial 2026 · Modelo Dixon-Coles + IA XGBoost
+    </footer>
+</div>
+</body>
+</html>
