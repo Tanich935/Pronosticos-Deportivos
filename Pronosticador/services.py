@@ -27,6 +27,20 @@ EQUIPOS_MUNDIAL_2026 = {
     "Sweden", "Paraguay", "Portugal", "Uruguay"
 }
 
+IMPORTANCIA_TORNEO = {
+    'FIFA World Cup': 3.0,
+    'FIFA World Cup qualification': 2.0,
+    'UEFA Euro': 2.5,
+    'UEFA Euro qualification': 1.8,
+    'Copa América': 2.5,
+    'UEFA Nations League': 1.5,
+    'African Cup of Nations': 2.0,
+    'African Cup of Nations qualification': 1.5,
+    'CONCACAF Nations League': 1.3,
+    'Friendly': 0.5,
+}
+IMPORTANCIA_DEFAULT = 1.0
+
 def normalize_name(name):
     return ''.join(c for c in unicodedata.normalize('NFD', name) if unicodedata.category(c) != 'Mn').lower().strip()
 
@@ -39,15 +53,17 @@ def get_best_match(input_name, available_names):
     return matches[0] if matches else None
 
 def _cargar_df_partidos():
-    partidos_qs = Partido.objects.filter(equipo_local__nombre__in=EQUIPOS_MUNDIAL_2026, equipo_visitante__nombre__in=EQUIPOS_MUNDIAL_2026).values('fecha', 'equipo_local__nombre', 'equipo_visitante__nombre', 'goles_local', 'goles_visitante', 'neutral')
+    partidos_qs = Partido.objects.filter(equipo_local__nombre__in=EQUIPOS_MUNDIAL_2026, equipo_visitante__nombre__in=EQUIPOS_MUNDIAL_2026).values('fecha', 'equipo_local__nombre', 'equipo_visitante__nombre', 'goles_local', 'goles_visitante', 'neutral', 'torneo')
     df = pd.DataFrame(list(partidos_qs))
     df.rename(columns={'equipo_local__nombre': 'local', 'equipo_visitante__nombre': 'visitante', 'goles_local': 'goles_local', 'goles_visitante': 'goles_visita'}, inplace=True)
     df['fecha'] = pd.to_datetime(df['fecha'])
     return df
 
-def _calcular_pesos_temporales(df, xi=0.001):
+def _calcular_pesos_temporales(df, xi=0.004):
     hoy = pd.Timestamp.today()
-    return np.exp(-xi * (hoy - df['fecha']).dt.days.astype(float))
+    peso_tiempo = np.exp(-xi * (hoy - df['fecha']).dt.days.astype(float))
+    peso_torneo = df['torneo'].map(lambda t: IMPORTANCIA_TORNEO.get(t, IMPORTANCIA_DEFAULT))
+    return peso_tiempo * peso_torneo
 
 def _preparar_arrays(df, equipos):
     idx = {equipo: i for i, equipo in enumerate(equipos)}
@@ -75,7 +91,7 @@ def _tau_dc(gl, gv, mu, la, rho):
     if gl==1 and gv==1: return 1-rho
     return 1.0
 
-def calcularFuerzasEquipos(min_partidos=3, xi=0.001):
+def calcularFuerzasEquipos(min_partidos=15, xi=0.004):
     df = _cargar_df_partidos()
     conteo = pd.concat([df['local'], df['visitante']]).value_counts()
     equipos_validos = sorted(conteo[conteo >= min_partidos].index.tolist())
@@ -91,18 +107,27 @@ def calcularFuerzasEquipos(min_partidos=3, xi=0.001):
         y.append(row['goles_local'])
         X.append([params_dict['alphas'][vis], params_dict['betas'][vis], params_dict['alphas'][loc], params_dict['betas'][loc], 0])
         y.append(row['goles_visita'])
-    model = xgb.XGBRegressor(objective='count:poisson', n_estimators=150).fit(np.array(X), np.array(y))
+    model = xgb.XGBRegressor(
+        objective='count:poisson',
+        n_estimators=150,
+        max_depth=3,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42
+    ).fit(np.array(X), np.array(y))
     params_dict['xgb_model'] = model
     return None, params_dict
 
-def predecir_partido(equipo_local, equipo_visitante, params_dict, max_goles=5):
+def predecir_partido(equipo_local, equipo_visitante, params_dict, max_goles=5, es_neutral=False):
     loc_db = get_best_match(equipo_local, params_dict['alphas'].keys())
     vis_db = get_best_match(equipo_visitante, params_dict['alphas'].keys())
     if not loc_db or not vis_db: raise ValueError(f"No pude encontrar '{equipo_local}' o '{equipo_visitante}'")
 
+    ventaja_local = 0 if es_neutral else 1
     xgb_model = params_dict['xgb_model']
     alphas, betas = params_dict['alphas'], params_dict['betas']
-    xg_local = float(xgb_model.predict(np.array([[alphas[loc_db], betas[loc_db], alphas[vis_db], betas[vis_db], 0]]))[0])
+    xg_local = float(xgb_model.predict(np.array([[alphas[loc_db], betas[loc_db], alphas[vis_db], betas[vis_db], ventaja_local]]))[0])
     xg_visita = float(xgb_model.predict(np.array([[alphas[vis_db], betas[vis_db], alphas[loc_db], betas[loc_db], 0]]))[0])
 
     matriz = np.zeros((max_goles+1, max_goles+1))
@@ -235,8 +260,8 @@ def generar_tres_paneles_base64(resultado):
     plt.close('all')
     return img
 
-def pronosticar(equipo_local, equipo_visitante):
+def pronosticar(equipo_local, equipo_visitante, es_neutral=False):
     _, params = calcularFuerzasEquipos()
-    res = predecir_partido(equipo_local, equipo_visitante, params)
+    res = predecir_partido(equipo_local, equipo_visitante, params, es_neutral=es_neutral)
     res['imagen_b64'] = generar_tres_paneles_base64(res)
     return res

@@ -9,7 +9,7 @@ def index(request):
     if request.method == 'POST':
         local = request.POST.get('local')
         visitante = request.POST.get('visitante')
-
+        es_neutral = request.POST.get('es_neutral') == 'on'
         if local and visitante:
             if local == visitante:
                 context['error'] = "¡Un equipo no puede jugar contra sí mismo!"
@@ -17,12 +17,13 @@ def index(request):
                 try:
                     # Pasamos los nombres tal cual vienen del formulario.
                     # El servicio (services.py) ya se encarga de limpiarlos y buscarlos.
-                    resultados = pronosticar(local, visitante)
+                    resultados = pronosticar(local, visitante, es_neutral=es_neutral)
                     
                     # Pasamos la imagen en base64 al HTML
                     context['imagen_b64'] = resultados['imagen_b64']
                     context['local_seleccionado'] = local
                     context['visitante_seleccionado'] = visitante
+                    context['es_neutral'] = es_neutral
                 except Exception as e:
                     context['error'] = f"Error al procesar la predicción: {str(e)}"
 

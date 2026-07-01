@@ -404,6 +404,13 @@
                 </select>
             </div>
 
+            <div class="field field-neutral">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" name="es_neutral" {% if es_neutral %}checked{% endif %}>
+                    <span>Cancha neutral</span>
+                </label>
+            </div>
+
             <button type="submit" class="btn-predict">Predecir partido</button>
         </form>
     </div>
